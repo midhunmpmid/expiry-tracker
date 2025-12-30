@@ -4,8 +4,10 @@ import { supabase } from "../supabaseClient";
 function ProductsManager() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [expandedCategories, setExpandedCategories] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [draggedCategory, setDraggedCategory] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category_id: "",
@@ -22,8 +24,14 @@ function ProductsManager() {
     const { data } = await supabase
       .from("categories")
       .select("*")
-      .order("name");
-    if (data) setCategories(data);
+      .order("display_order");
+    if (data) {
+      setCategories(data);
+      // Expand all categories by default
+      const expanded = {};
+      data.forEach((cat) => (expanded[cat.id] = true));
+      setExpandedCategories(expanded);
+    }
   };
 
   const fetchProducts = async () => {
@@ -32,11 +40,62 @@ function ProductsManager() {
       .select(
         `
         *,
-        categories (name)
+        categories (id, name, display_order)
       `
       )
       .order("name");
     if (data) setProducts(data);
+  };
+
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
+    }));
+  };
+
+  const handleDragStart = (e, category) => {
+    setDraggedCategory(category);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e, targetCategory) => {
+    e.preventDefault();
+    if (!draggedCategory || draggedCategory.id === targetCategory.id) return;
+
+    const draggedIndex = categories.findIndex(
+      (c) => c.id === draggedCategory.id
+    );
+    const targetIndex = categories.findIndex((c) => c.id === targetCategory.id);
+
+    const newCategories = [...categories];
+    newCategories.splice(draggedIndex, 1);
+    newCategories.splice(targetIndex, 0, draggedCategory);
+
+    // Update display_order in database
+    const updates = newCategories.map((cat, index) => ({
+      id: cat.id,
+      display_order: index,
+    }));
+
+    for (const update of updates) {
+      await supabase
+        .from("categories")
+        .update({ display_order: update.display_order })
+        .eq("id", update.id);
+    }
+
+    setCategories(newCategories);
+    setDraggedCategory(null);
+  };
+
+  const getProductsByCategory = (categoryId) => {
+    return products.filter((p) => p.category_id === categoryId);
   };
 
   const handleImageUpload = async (file) => {
@@ -139,6 +198,8 @@ function ProductsManager() {
         </button>
       </div>
 
+      <div className="drag-hint">💡 Drag categories to reorder them</div>
+
       {showForm && (
         <div className="modal-overlay">
           <div className="modal">
@@ -206,33 +267,78 @@ function ProductsManager() {
         </div>
       )}
 
-      <div className="products-grid">
-        {products.map((product) => (
-          <div key={product.id} className="product-card">
-            {product.image_url && (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="product-image"
-              />
-            )}
-            <div className="product-info">
-              <h4>{product.name}</h4>
-              <p className="category-badge">{product.categories?.name}</p>
-            </div>
-            <div className="product-actions">
-              <button onClick={() => handleEdit(product)} className="btn-edit">
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(product.id)}
-                className="btn-delete"
+      <div className="category-groups">
+        {categories.map((category) => {
+          const categoryProducts = getProductsByCategory(category.id);
+
+          return (
+            <div
+              key={category.id}
+              className="category-group"
+              draggable
+              onDragStart={(e) => handleDragStart(e, category)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, category)}
+            >
+              <div
+                className="category-header"
+                onClick={() => toggleCategory(category.id)}
               >
-                Delete
-              </button>
+                <div className="category-title">
+                  <span className="drag-handle">⋮⋮</span>
+                  <span className="expand-icon">
+                    {expandedCategories[category.id] ? "▼" : "▶"}
+                  </span>
+                  <h3>{category.name}</h3>
+                  <span className="product-count">
+                    ({categoryProducts.length})
+                  </span>
+                </div>
+              </div>
+
+              {expandedCategories[category.id] && (
+                <div className="category-content">
+                  {categoryProducts.length === 0 ? (
+                    <div className="empty-category">
+                      No products in this category
+                    </div>
+                  ) : (
+                    <div className="products-grid">
+                      {categoryProducts.map((product) => (
+                        <div key={product.id} className="product-card">
+                          {product.image_url && (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="product-image"
+                            />
+                          )}
+                          <div className="product-info">
+                            <h4>{product.name}</h4>
+                          </div>
+                          <div className="product-actions">
+                            <button
+                              onClick={() => handleEdit(product)}
+                              className="btn-edit"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product.id)}
+                              className="btn-delete"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
