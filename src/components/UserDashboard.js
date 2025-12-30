@@ -28,16 +28,35 @@ function UserDashboard() {
   }, [shop]);
 
   const fetchShop = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const { data } = await supabase
-      .from("shops")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (data) setShop(data);
+      if (!user) {
+        console.error("No user found");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("shops")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching shop:", error);
+        return;
+      }
+
+      if (data) {
+        setShop(data);
+      } else {
+        console.error("No shop found for user");
+      }
+    } catch (err) {
+      console.error("Exception fetching shop:", err);
+    }
   };
 
   const fetchProducts = async () => {
@@ -156,7 +175,15 @@ function UserDashboard() {
     await supabase.auth.signOut();
   };
 
-  if (!shop) return <div className="loading">Loading...</div>;
+  if (!shop)
+    return (
+      <div className="loading">
+        <p>Loading shop information...</p>
+        <p style={{ fontSize: "14px", marginTop: "10px" }}>
+          If this persists, please contact your administrator.
+        </p>
+      </div>
+    );
 
   return (
     <div className="user-dashboard">
