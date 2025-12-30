@@ -16,26 +16,32 @@ function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
         checkAdminStatus(session.user.email);
       } else {
         setLoading(false);
+        setAdminCheckComplete(true);
       }
     });
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setAdminCheckComplete(false);
       if (session) {
         checkAdminStatus(session.user.email);
       } else {
         setIsAdmin(false);
         setLoading(false);
+        setAdminCheckComplete(true);
       }
     });
 
@@ -43,17 +49,29 @@ function App() {
   }, []);
 
   const checkAdminStatus = async (email) => {
-    const { data, error } = await supabase
-      .from("admin_users")
-      .select("*")
-      .eq("username", email)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("username", email)
+        .maybeSingle();
 
-    setIsAdmin(!!data && !error);
-    setLoading(false);
+      if (error) {
+        console.error("Admin check error:", error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!data);
+      }
+    } catch (err) {
+      console.error("Admin check exception:", err);
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+      setAdminCheckComplete(true);
+    }
   };
 
-  if (loading) {
+  if (loading || !adminCheckComplete) {
     return <div className="loading">Loading...</div>;
   }
 
@@ -62,7 +80,11 @@ function App() {
       <Routes>
         <Route
           path="/admin/login"
-          element={!session ? <AdminLogin /> : <Navigate to="/admin" />}
+          element={!session ? <AdminLogin /> : <Navigate to="/admin" replace />}
+        />
+        <Route
+          path="/login/admin"
+          element={!session ? <AdminLogin /> : <Navigate to="/admin" replace />}
         />
         <Route
           path="/admin/*"
@@ -70,18 +92,22 @@ function App() {
             session && isAdmin ? (
               <AdminDashboard />
             ) : (
-              <Navigate to="/admin/login" />
+              <Navigate to="/admin/login" replace />
             )
           }
         />
         <Route
           path="/login"
-          element={!session ? <UserLogin /> : <Navigate to="/" />}
+          element={!session ? <UserLogin /> : <Navigate to="/" replace />}
         />
         <Route
           path="/"
           element={
-            session && !isAdmin ? <UserDashboard /> : <Navigate to="/login" />
+            session && !isAdmin ? (
+              <UserDashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
       </Routes>
