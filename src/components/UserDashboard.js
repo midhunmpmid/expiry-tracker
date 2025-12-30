@@ -130,13 +130,13 @@ function UserDashboard() {
     return diffDays;
   };
 
-  const getExpiryStatus = (expiryDate) => {
+  const getExpiryStatus = useCallback((expiryDate) => {
     const days = getDaysUntilExpiry(expiryDate);
     if (days < 0) return "expired";
     if (days <= 5) return "critical";
     if (days <= 10) return "warning";
     return "ok";
-  };
+  }, []);
 
   const getCategoryStatus = useCallback(
     (categoryId) => {
@@ -159,9 +159,8 @@ function UserDashboard() {
       if (hasCritical) return "critical";
       if (hasWarning) return "warning";
       return "ok";
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [inventory]
+    [inventory, getExpiryStatus]
   );
 
   const getInventoryByCategory = (categoryId) => {
