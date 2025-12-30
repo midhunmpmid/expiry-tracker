@@ -24,6 +24,7 @@ function UserDashboard() {
     if (shop) {
       fetchInventory();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
 
   const fetchShop = async () => {
@@ -308,7 +309,6 @@ function UserDashboard() {
         ) : (
           inventory.map((item) => {
             const status = getExpiryStatus(item.expiry_date);
-            const daysUntil = getDaysUntilExpiry(item.expiry_date);
 
             return (
               <div key={item.id} className={`inventory-item ${status}`}>
