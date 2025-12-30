@@ -159,6 +159,7 @@ function UserDashboard() {
       if (hasCritical) return "critical";
       if (hasWarning) return "warning";
       return "ok";
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [inventory]
   );
