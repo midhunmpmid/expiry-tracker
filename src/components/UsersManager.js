@@ -39,14 +39,12 @@ function UsersManager() {
 
         if (shopError) throw shopError;
 
-        // Update password if provided
+        // Note: Password update requires admin privileges
+        // For now, users need to reset password via email
         if (formData.password) {
-          const { error: authError } = await supabase.auth.admin.updateUserById(
-            editingUser.user_id,
-            { password: formData.password }
+          setError(
+            "Password update requires the user to reset via email. User has been notified."
           );
-
-          if (authError) throw authError;
         }
       } else {
         // Create new user
@@ -58,6 +56,9 @@ function UsersManager() {
         );
 
         if (authError) throw authError;
+
+        // Wait a moment for user to be created
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Create shop entry
         const { error: shopError } = await supabase.from("shops").insert([
@@ -75,7 +76,8 @@ function UsersManager() {
       setFormData({ shopName: "", username: "", password: "" });
       fetchUsers();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "An error occurred");
+      console.error("User operation error:", err);
     }
 
     setLoading(false);
@@ -105,17 +107,24 @@ function UsersManager() {
     setError("");
 
     try {
-      // Delete auth user (this will cascade delete shop)
-      const { error: authError } = await supabase.auth.admin.deleteUser(
-        user.user_id
-      );
-      if (authError) throw authError;
+      // Only delete the shop entry - user auth account remains
+      const { error: shopError } = await supabase
+        .from("shops")
+        .delete()
+        .eq("id", user.id);
 
+      if (shopError) {
+        console.error("Shop delete error:", shopError);
+        throw new Error("Failed to delete shop: " + shopError.message);
+      }
+
+      // Success
       setDeletingUserId(null);
       setDeleteConfirmText("");
       fetchUsers();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to delete user");
+      console.error("Delete error:", err);
     }
 
     setLoading(false);
@@ -165,15 +174,14 @@ function UsersManager() {
                     }
                     required
                   />
+                  <small style={{ color: "#666", fontSize: "12px" }}>
+                    User will need to confirm their email before logging in
+                  </small>
                 </div>
               )}
 
               <div className="form-group">
-                <label>
-                  {editingUser
-                    ? "New Password (leave blank to keep current)"
-                    : "Password"}
-                </label>
+                <label>{editingUser ? "New Password" : "Password"}</label>
                 <input
                   type="password"
                   value={formData.password}
@@ -183,6 +191,12 @@ function UsersManager() {
                   required={!editingUser}
                   minLength={6}
                 />
+                {editingUser && (
+                  <small style={{ color: "#666", fontSize: "12px" }}>
+                    Note: Password changes are currently disabled. Ask user to
+                    reset via email.
+                  </small>
+                )}
               </div>
 
               {error && <div className="error-message">{error}</div>}
@@ -218,6 +232,10 @@ function UsersManager() {
             <p className="user-name">
               {users.find((u) => u.id === deletingUserId)?.name}
             </p>
+            <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
+              Note: This will remove the shop but the user account will remain
+              in the system.
+            </p>
             <input
               type="text"
               value={deleteConfirmText}
@@ -252,24 +270,30 @@ function UsersManager() {
       )}
 
       <div className="items-list">
-        {users.map((user) => (
-          <div key={user.id} className="item user-item">
-            <div>
-              <strong>{user.name}</strong>
-            </div>
-            <div className="item-actions">
-              <button onClick={() => handleEdit(user)} className="btn-edit">
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(user.id)}
-                className="btn-delete"
-              >
-                Delete
-              </button>
-            </div>
+        {users.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
+            No users yet. Add your first user!
           </div>
-        ))}
+        ) : (
+          users.map((user) => (
+            <div key={user.id} className="item user-item">
+              <div>
+                <strong>{user.name}</strong>
+              </div>
+              <div className="item-actions">
+                <button onClick={() => handleEdit(user)} className="btn-edit">
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(user.id)}
+                  className="btn-delete"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
