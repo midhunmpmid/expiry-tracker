@@ -4,7 +4,6 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import AdminLogin from "./components/AdminLogin";
@@ -18,7 +17,6 @@ function AppRoutes() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminCheckComplete, setAdminCheckComplete] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     // Get initial session
