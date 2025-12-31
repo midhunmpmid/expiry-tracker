@@ -8,10 +8,11 @@ function UserDashboard() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
-  const [draggedCategory, setDraggedCategory] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedModalCategories, setExpandedModalCategories] = useState({});
   const [selectedProduct, setSelectedProduct] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [editingItem, setEditingItem] = useState(null);
@@ -27,7 +28,6 @@ function UserDashboard() {
   useEffect(() => {
     if (shop) {
       fetchInventory();
-      fetchCategoryOrders();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
@@ -60,35 +60,8 @@ function UserDashboard() {
     const { data } = await supabase
       .from("categories")
       .select("*")
-      .order("display_order");
-    if (data) {
-      setCategories(data);
-      const expanded = {};
-      data.forEach((cat) => (expanded[cat.id] = true));
-      setExpandedCategories(expanded);
-    }
-  };
-
-  const fetchCategoryOrders = async () => {
-    if (!shop) return;
-
-    const { data } = await supabase
-      .from("category_orders")
-      .select("*")
-      .eq("shop_id", shop.id)
-      .order("display_order");
-
-    if (data && data.length > 0) {
-      const orderedCategories = data
-        .map((co) => categories.find((c) => c.id === co.category_id))
-        .filter(Boolean);
-
-      const unorderedCategories = categories.filter(
-        (c) => !data.find((co) => co.category_id === c.id)
-      );
-
-      setCategories([...orderedCategories, ...unorderedCategories]);
-    }
+      .order("name");
+    if (data) setCategories(data);
   };
 
   const fetchProducts = async () => {
@@ -117,7 +90,32 @@ function UserDashboard() {
       .eq("shop_id", shop.id)
       .order("expiry_date");
 
-    if (data) setInventory(data);
+    if (data) {
+      setInventory(data);
+      // Auto-expand only red categories on initial load
+      autoExpandCategories(data);
+    }
+  };
+
+  const autoExpandCategories = (inventoryData) => {
+    const expanded = {};
+
+    categories.forEach((category) => {
+      const categoryItems = inventoryData.filter(
+        (item) => item.products?.category_id === category.id
+      );
+
+      const hasUrgent = categoryItems.some((item) => {
+        const status = getExpiryStatus(item.expiry_date);
+        return (
+          status === "critical" || status === "expired" || status === "today"
+        );
+      });
+
+      expanded[category.id] = hasUrgent;
+    });
+
+    setExpandedCategories(expanded);
   };
 
   const getDaysUntilExpiry = (expiryDate) => {
@@ -133,10 +131,22 @@ function UserDashboard() {
   const getExpiryStatus = useCallback((expiryDate) => {
     const days = getDaysUntilExpiry(expiryDate);
     if (days < 0) return "expired";
+    if (days === 0) return "today";
     if (days <= 5) return "critical";
     if (days <= 10) return "warning";
     return "ok";
   }, []);
+
+  const getEarliestExpiryDate = (categoryId) => {
+    const categoryItems = inventory.filter(
+      (item) => item.products?.category_id === categoryId
+    );
+
+    if (categoryItems.length === 0) return null;
+
+    const dates = categoryItems.map((item) => new Date(item.expiry_date));
+    return new Date(Math.min(...dates));
+  };
 
   const getCategoryStatus = useCallback(
     (categoryId) => {
@@ -144,29 +154,60 @@ function UserDashboard() {
         (item) => item.products?.category_id === categoryId
       );
 
+      let hasExpired = false;
+      let hasToday = false;
       let hasCritical = false;
       let hasWarning = false;
 
       categoryItems.forEach((item) => {
         const status = getExpiryStatus(item.expiry_date);
-        if (status === "critical" || status === "expired") {
-          hasCritical = true;
-        } else if (status === "warning") {
-          hasWarning = true;
-        }
+        if (status === "expired") hasExpired = true;
+        else if (status === "today") hasToday = true;
+        else if (status === "critical") hasCritical = true;
+        else if (status === "warning") hasWarning = true;
       });
 
-      if (hasCritical) return "critical";
+      if (hasExpired || hasToday || hasCritical) return "critical";
       if (hasWarning) return "warning";
       return "ok";
     },
     [inventory, getExpiryStatus]
   );
 
-  const getInventoryByCategory = (categoryId) => {
-    return inventory.filter(
-      (item) => item.products?.category_id === categoryId
+  const getSortedCategories = () => {
+    // Filter categories that have inventory items
+    const categoriesWithItems = categories.filter((category) =>
+      inventory.some((item) => item.products?.category_id === category.id)
     );
+
+    return categoriesWithItems.sort((a, b) => {
+      const statusA = getCategoryStatus(a.id);
+      const statusB = getCategoryStatus(b.id);
+
+      const statusPriority = { critical: 0, warning: 1, ok: 2 };
+      const priorityA = statusPriority[statusA];
+      const priorityB = statusPriority[statusB];
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Same status - sort by earliest expiry date (FIFO)
+      const earliestA = getEarliestExpiryDate(a.id);
+      const earliestB = getEarliestExpiryDate(b.id);
+
+      if (earliestA && earliestB) {
+        return earliestA - earliestB;
+      }
+
+      return 0;
+    });
+  };
+
+  const getInventoryByCategory = (categoryId) => {
+    return inventory
+      .filter((item) => item.products?.category_id === categoryId)
+      .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
   };
 
   const toggleCategory = (categoryId) => {
@@ -176,44 +217,26 @@ function UserDashboard() {
     }));
   };
 
-  const handleDragStart = (e, category) => {
-    setDraggedCategory(category);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = async (e, targetCategory) => {
-    e.preventDefault();
-    if (!draggedCategory || draggedCategory.id === targetCategory.id) return;
-
-    const draggedIndex = categories.findIndex(
-      (c) => c.id === draggedCategory.id
-    );
-    const targetIndex = categories.findIndex((c) => c.id === targetCategory.id);
-
-    const newCategories = [...categories];
-    newCategories.splice(draggedIndex, 1);
-    newCategories.splice(targetIndex, 0, draggedCategory);
-
-    // Save to database
-    const updates = newCategories.map((cat, index) => ({
-      shop_id: shop.id,
-      category_id: cat.id,
-      display_order: index,
+  const toggleModalCategory = (categoryId) => {
+    setExpandedModalCategories((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
     }));
+  };
 
-    // Delete existing orders
-    await supabase.from("category_orders").delete().eq("shop_id", shop.id);
+  const getFilteredProducts = () => {
+    if (!searchQuery.trim()) return products;
 
-    // Insert new orders
-    await supabase.from("category_orders").insert(updates);
+    const query = searchQuery.toLowerCase();
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(query) ||
+        product.categories?.name.toLowerCase().includes(query)
+    );
+  };
 
-    setCategories(newCategories);
-    setDraggedCategory(null);
+  const getProductsByCategory = (categoryId) => {
+    return getFilteredProducts().filter((p) => p.category_id === categoryId);
   };
 
   const handleAddItem = async (e) => {
@@ -232,6 +255,8 @@ function UserDashboard() {
       setShowAddForm(false);
       setSelectedProduct("");
       setExpiryDate("");
+      setSearchQuery("");
+      setExpandedModalCategories({});
       fetchInventory();
     }
 
@@ -289,6 +314,10 @@ function UserDashboard() {
     await supabase.auth.signOut();
   };
 
+  const handleProductSelect = (productId) => {
+    setSelectedProduct(productId);
+  };
+
   if (!shop)
     return (
       <div className="loading">
@@ -298,6 +327,8 @@ function UserDashboard() {
         </p>
       </div>
     );
+
+  const sortedCategories = getSortedCategories();
 
   return (
     <div className="user-dashboard">
@@ -312,29 +343,77 @@ function UserDashboard() {
         + Add Item
       </button>
 
-      <div className="drag-hint">💡 Drag categories to reorder them</div>
-
       {showAddForm && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modal modal-large">
             <h3>Add New Item</h3>
-            <form onSubmit={handleAddItem}>
-              <div className="form-group">
-                <label>Product</label>
-                <select
-                  value={selectedProduct}
-                  onChange={(e) => setSelectedProduct(e.target.value)}
-                  required
-                >
-                  <option value="">Select a product</option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} ({product.categories?.name})
-                    </option>
-                  ))}
-                </select>
-              </div>
 
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="🔍 Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+            </div>
+
+            <div className="modal-categories">
+              {categories.map((category) => {
+                const categoryProducts = getProductsByCategory(category.id);
+                if (categoryProducts.length === 0) return null;
+
+                return (
+                  <div key={category.id} className="modal-category-group">
+                    <div
+                      className="modal-category-header"
+                      onClick={() => toggleModalCategory(category.id)}
+                    >
+                      <span className="expand-icon">
+                        {expandedModalCategories[category.id] ? "▼" : "▶"}
+                      </span>
+                      <h4>{category.name}</h4>
+                      <span className="product-count-small">
+                        ({categoryProducts.length})
+                      </span>
+                    </div>
+
+                    {expandedModalCategories[category.id] && (
+                      <div className="modal-products-list">
+                        {categoryProducts.map((product) => (
+                          <div
+                            key={product.id}
+                            className={`modal-product-item ${
+                              selectedProduct === product.id ? "selected" : ""
+                            }`}
+                            onClick={() => handleProductSelect(product.id)}
+                          >
+                            <div className="modal-product-image">
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                />
+                              ) : (
+                                <div className="no-image-small">📦</div>
+                              )}
+                            </div>
+                            <div className="modal-product-name">
+                              {product.name}
+                            </div>
+                            {selectedProduct === product.id && (
+                              <div className="checkmark">✓</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <form onSubmit={handleAddItem} className="modal-form">
               <div className="form-group">
                 <label>Expiry Date</label>
                 <input
@@ -348,7 +427,7 @@ function UserDashboard() {
               <div className="modal-actions">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !selectedProduct}
                   className="btn-primary"
                 >
                   {loading ? "Saving..." : "Save"}
@@ -359,6 +438,8 @@ function UserDashboard() {
                     setShowAddForm(false);
                     setSelectedProduct("");
                     setExpiryDate("");
+                    setSearchQuery("");
+                    setExpandedModalCategories({});
                   }}
                   className="btn-cancel"
                 >
@@ -445,25 +526,17 @@ function UserDashboard() {
       )}
 
       <div className="category-groups">
-        {categories.map((category) => {
+        {sortedCategories.map((category) => {
           const categoryItems = getInventoryByCategory(category.id);
           const categoryStatus = getCategoryStatus(category.id);
 
           return (
-            <div
-              key={category.id}
-              className="category-group"
-              draggable
-              onDragStart={(e) => handleDragStart(e, category)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, category)}
-            >
+            <div key={category.id} className="category-group">
               <div
                 className={`category-header ${categoryStatus}`}
                 onClick={() => toggleCategory(category.id)}
               >
                 <div className="category-title">
-                  <span className="drag-handle">⋮⋮</span>
                   <span className="expand-icon">
                     {expandedCategories[category.id] ? "▼" : "▶"}
                   </span>
@@ -476,71 +549,75 @@ function UserDashboard() {
 
               {expandedCategories[category.id] && (
                 <div className="category-content">
-                  {categoryItems.length === 0 ? (
-                    <div className="empty-category">
-                      No items in this category
-                    </div>
-                  ) : (
-                    <div className="inventory-list">
-                      {categoryItems.map((item) => {
-                        const status = getExpiryStatus(item.expiry_date);
+                  <div className="inventory-list">
+                    {categoryItems.map((item) => {
+                      const status = getExpiryStatus(item.expiry_date);
 
-                        return (
-                          <div
-                            key={item.id}
-                            className={`inventory-item ${status}`}
-                          >
-                            <div className="item-image">
-                              {item.products.image_url ? (
-                                <img
-                                  src={item.products.image_url}
-                                  alt={item.products.name}
-                                />
-                              ) : (
-                                <div className="no-image">No Image</div>
-                              )}
-                            </div>
+                      return (
+                        <div
+                          key={item.id}
+                          className={`inventory-item ${status}`}
+                        >
+                          <div className="item-image">
+                            {item.products.image_url ? (
+                              <img
+                                src={item.products.image_url}
+                                alt={item.products.name}
+                              />
+                            ) : (
+                              <div className="no-image">📦</div>
+                            )}
+                          </div>
 
-                            <div className="item-details">
-                              <h4>{item.products.name}</h4>
-                              {status === "expired" ? (
-                                <p className="expiry-text expired-text">
-                                  <strong>EXPIRED</strong>
-                                </p>
-                              ) : (
-                                <p className="expiry-text">
-                                  Expires:{" "}
-                                  {new Date(
-                                    item.expiry_date
-                                  ).toLocaleDateString()}
-                                </p>
-                              )}
-                            </div>
+                          <div className="item-details">
+                            <h4>{item.products.name}</h4>
+                            {status === "expired" ? (
+                              <p className="expiry-text expired-text">
+                                <strong>EXPIRED</strong>
+                              </p>
+                            ) : status === "today" ? (
+                              <p className="expiry-text today-text">
+                                <strong>EXPIRING TODAY</strong>
+                              </p>
+                            ) : (
+                              <p className="expiry-text">
+                                Expires:{" "}
+                                {new Date(
+                                  item.expiry_date
+                                ).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
 
-                            <div className="item-menu">
-                              <button className="menu-button">⋮</button>
-                              <div className="menu-dropdown">
-                                <button onClick={() => openEditModal(item)}>
-                                  Edit Date
-                                </button>
-                                <button
-                                  onClick={() => openDeleteModal(item)}
-                                  className="delete-option"
-                                >
-                                  Delete
-                                </button>
-                              </div>
+                          <div className="item-menu">
+                            <button className="menu-button">⋮</button>
+                            <div className="menu-dropdown">
+                              <button onClick={() => openEditModal(item)}>
+                                Edit Date
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(item)}
+                                className="delete-option"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
           );
         })}
+
+        {sortedCategories.length === 0 && (
+          <div className="empty-state">
+            No items in inventory. Add your first item!
+          </div>
+        )}
       </div>
     </div>
   );

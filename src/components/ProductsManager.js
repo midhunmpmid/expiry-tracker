@@ -7,7 +7,6 @@ function ProductsManager() {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [draggedCategory, setDraggedCategory] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category_id: "",
@@ -24,13 +23,13 @@ function ProductsManager() {
     const { data } = await supabase
       .from("categories")
       .select("*")
-      .order("display_order");
+      .order("name");
     if (data) {
       setCategories(data);
-      // Expand all categories by default
-      const expanded = {};
-      data.forEach((cat) => (expanded[cat.id] = true));
-      setExpandedCategories(expanded);
+      // Start with all collapsed
+      const collapsed = {};
+      data.forEach((cat) => (collapsed[cat.id] = false));
+      setExpandedCategories(collapsed);
     }
   };
 
@@ -40,7 +39,7 @@ function ProductsManager() {
       .select(
         `
         *,
-        categories (id, name, display_order)
+        categories (id, name)
       `
       )
       .order("name");
@@ -54,48 +53,16 @@ function ProductsManager() {
     }));
   };
 
-  const handleDragStart = (e, category) => {
-    setDraggedCategory(category);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = async (e, targetCategory) => {
-    e.preventDefault();
-    if (!draggedCategory || draggedCategory.id === targetCategory.id) return;
-
-    const draggedIndex = categories.findIndex(
-      (c) => c.id === draggedCategory.id
-    );
-    const targetIndex = categories.findIndex((c) => c.id === targetCategory.id);
-
-    const newCategories = [...categories];
-    newCategories.splice(draggedIndex, 1);
-    newCategories.splice(targetIndex, 0, draggedCategory);
-
-    // Update display_order in database
-    const updates = newCategories.map((cat, index) => ({
-      id: cat.id,
-      display_order: index,
-    }));
-
-    for (const update of updates) {
-      await supabase
-        .from("categories")
-        .update({ display_order: update.display_order })
-        .eq("id", update.id);
-    }
-
-    setCategories(newCategories);
-    setDraggedCategory(null);
-  };
-
   const getProductsByCategory = (categoryId) => {
     return products.filter((p) => p.category_id === categoryId);
+  };
+
+  const getSortedCategories = () => {
+    return [...categories].sort((a, b) => {
+      const countA = getProductsByCategory(a.id).length;
+      const countB = getProductsByCategory(b.id).length;
+      return countB - countA; // Most products first
+    });
   };
 
   const handleImageUpload = async (file) => {
@@ -189,6 +156,8 @@ function ProductsManager() {
     setFormData({ name: "", category_id: "", image: null });
   };
 
+  const sortedCategories = getSortedCategories();
+
   return (
     <div className="manager-section">
       <div className="section-header">
@@ -197,8 +166,6 @@ function ProductsManager() {
           Add Product
         </button>
       </div>
-
-      <div className="drag-hint">💡 Drag categories to reorder them</div>
 
       {showForm && (
         <div className="modal-overlay">
@@ -244,6 +211,15 @@ function ProductsManager() {
                     setFormData({ ...formData, image: e.target.files[0] })
                   }
                 />
+                {editingProduct?.image_url && !formData.image && (
+                  <div style={{ marginTop: "10px" }}>
+                    <img
+                      src={editingProduct.image_url}
+                      alt="Current"
+                      style={{ maxWidth: "100px", borderRadius: "4px" }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="modal-actions">
@@ -268,24 +244,16 @@ function ProductsManager() {
       )}
 
       <div className="category-groups">
-        {categories.map((category) => {
+        {sortedCategories.map((category) => {
           const categoryProducts = getProductsByCategory(category.id);
 
           return (
-            <div
-              key={category.id}
-              className="category-group"
-              draggable
-              onDragStart={(e) => handleDragStart(e, category)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, category)}
-            >
+            <div key={category.id} className="category-group">
               <div
                 className="category-header"
                 onClick={() => toggleCategory(category.id)}
               >
                 <div className="category-title">
-                  <span className="drag-handle">⋮⋮</span>
                   <span className="expand-icon">
                     {expandedCategories[category.id] ? "▼" : "▶"}
                   </span>
@@ -303,32 +271,32 @@ function ProductsManager() {
                       No products in this category
                     </div>
                   ) : (
-                    <div className="products-grid">
+                    <div className="inventory-list">
                       {categoryProducts.map((product) => (
-                        <div key={product.id} className="product-card">
-                          {product.image_url && (
-                            <img
-                              src={product.image_url}
-                              alt={product.name}
-                              className="product-image"
-                            />
-                          )}
-                          <div className="product-info">
+                        <div key={product.id} className="inventory-item">
+                          <div className="item-image">
+                            {product.image_url ? (
+                              <img src={product.image_url} alt={product.name} />
+                            ) : (
+                              <div className="no-image">📦</div>
+                            )}
+                          </div>
+                          <div className="item-details">
                             <h4>{product.name}</h4>
                           </div>
-                          <div className="product-actions">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="btn-edit"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="btn-delete"
-                            >
-                              Delete
-                            </button>
+                          <div className="item-menu">
+                            <button className="menu-button">⋮</button>
+                            <div className="menu-dropdown">
+                              <button onClick={() => handleEdit(product)}>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(product.id)}
+                                className="delete-option"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}

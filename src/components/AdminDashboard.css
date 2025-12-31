@@ -227,17 +227,6 @@
 }
 
 /* Category Groups */
-.drag-hint {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 12px 20px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 14px;
-  border-left: 4px solid #1976d2;
-}
-
 .category-groups {
   display: flex;
   flex-direction: column;
@@ -250,11 +239,6 @@
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s;
-  cursor: grab;
-}
-
-.category-group:active {
-  cursor: grabbing;
 }
 
 .category-group:hover {
@@ -278,17 +262,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.drag-handle {
-  color: #999;
-  cursor: grab;
-  font-size: 16px;
-  padding: 4px;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
 }
 
 .expand-icon {
