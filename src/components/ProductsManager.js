@@ -73,7 +73,7 @@ function ProductsManager() {
       .toString(36)
       .substring(7)}.${fileExt}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("product-images")
       .upload(fileName, file, {
         cacheControl: "3600",
