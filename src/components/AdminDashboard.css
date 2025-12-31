@@ -237,7 +237,7 @@
   background: white;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.2s;
 }
 
@@ -290,6 +290,8 @@
 .category-content {
   padding: 20px;
   background: white;
+  border-radius: 0 0 8px 8px;
+  overflow: visible;
 }
 
 .empty-category {
@@ -307,6 +309,7 @@
   gap: 12px;
   position: relative;
   z-index: 1;
+  overflow: visible;
 }
 
 .inventory-item {
