@@ -29,6 +29,7 @@ function UserDashboard() {
     if (shop) {
       fetchInventory();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
 
   useEffect(() => {
