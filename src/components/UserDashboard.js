@@ -29,8 +29,15 @@ function UserDashboard() {
     if (shop) {
       fetchInventory();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
+
+  useEffect(() => {
+    if (shop && inventory.length > 0) {
+      // Auto-expand only red categories when inventory is loaded
+      autoExpandCategories(inventory);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shop, inventory.length]);
 
   const fetchShop = async () => {
     try {
@@ -92,8 +99,6 @@ function UserDashboard() {
 
     if (data) {
       setInventory(data);
-      // Auto-expand only red categories on initial load
-      autoExpandCategories(data);
     }
   };
 
@@ -563,6 +568,15 @@ function UserDashboard() {
                               <img
                                 src={item.products.image_url}
                                 alt={item.products.name}
+                                onError={(e) => {
+                                  console.error(
+                                    "Failed to load image:",
+                                    item.products.image_url
+                                  );
+                                  e.target.style.display = "none";
+                                  e.target.parentElement.innerHTML =
+                                    '<div class="no-image">📦</div>';
+                                }}
                               />
                             ) : (
                               <div className="no-image">📦</div>

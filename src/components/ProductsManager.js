@@ -69,22 +69,28 @@ function ProductsManager() {
     if (!file) return null;
 
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from("product-images")
-      .upload(filePath, file);
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
+      alert("Failed to upload image: " + uploadError.message);
       return null;
     }
 
     const { data } = supabase.storage
       .from("product-images")
-      .getPublicUrl(filePath);
+      .getPublicUrl(fileName);
 
+    console.log("Uploaded image URL:", data.publicUrl);
     return data.publicUrl;
   };
 
