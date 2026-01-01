@@ -1,3 +1,4 @@
+// src/components/AdminDashboard.js
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import CategoriesManager from "./CategoriesManager";
@@ -27,10 +28,34 @@ function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
-        <button onClick={handleLogout} className="btn-logout">
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="btn-logout"
+        >
           Logout
         </button>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirm Logout</h3>
+            <p>Are you sure you want to logout?</p>
+
+            <div className="modal-actions">
+              <button onClick={handleLogout} className="btn-delete">
+                Yes, Logout
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="btn-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="admin-tabs">
         <button
