@@ -245,6 +245,33 @@ function UserDashboard() {
     return getFilteredProducts().filter((p) => p.category_id === categoryId);
   };
 
+  // Auto-expand categories when search changes
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.trim()) {
+      // Auto-expand categories with matching products
+      const newExpanded = {};
+      categories.forEach((category) => {
+        const filteredProducts = products.filter((product) => {
+          const matchesSearch =
+            product.name.toLowerCase().includes(query.toLowerCase()) ||
+            product.categories?.name
+              .toLowerCase()
+              .includes(query.toLowerCase());
+          const matchesCategory = product.category_id === category.id;
+          return matchesSearch && matchesCategory;
+        });
+        newExpanded[category.id] = filteredProducts.length > 0;
+      });
+      setExpandedModalCategories(newExpanded);
+    } else {
+      // Collapse all when search is cleared
+      setExpandedModalCategories({});
+    }
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -402,7 +429,7 @@ function UserDashboard() {
                 type="text"
                 placeholder="🔍 Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="search-input"
               />
             </div>
