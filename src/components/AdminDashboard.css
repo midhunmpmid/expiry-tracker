@@ -441,6 +441,14 @@
   background-color: #ffebee;
 }
 
+.delete-product-name {
+  font-size: 20px;
+  color: #333;
+  margin: 16px 0;
+  text-align: center;
+  font-weight: 600;
+}
+
 @media (max-width: 1024px) {
   .admin-header {
     padding: 16px 20px;

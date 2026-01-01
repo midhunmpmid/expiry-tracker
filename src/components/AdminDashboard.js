@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import CategoriesManager from "./CategoriesManager";
 import ProductsManager from "./ProductsManager";
@@ -6,10 +6,21 @@ import UsersManager from "./UsersManager";
 import "./AdminDashboard.css";
 
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("categories");
+  const [activeTab, setActiveTab] = useState(() => {
+    // Get saved tab from localStorage or default to 'categories'
+    return localStorage.getItem("adminActiveTab") || "categories";
+  });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("adminActiveTab", activeTab);
+  }, [activeTab]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem("adminActiveTab");
+    setShowLogoutConfirm(false);
   };
 
   return (

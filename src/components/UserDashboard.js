@@ -18,6 +18,7 @@ function UserDashboard() {
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     fetchShop();
@@ -339,10 +340,38 @@ function UserDashboard() {
     <div className="user-dashboard">
       <div className="user-header">
         <h1>{shop.name}</h1>
-        <button onClick={handleLogout} className="btn-logout">
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="btn-logout"
+        >
           Logout
         </button>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirm Logout</h3>
+            <p>Are you sure you want to logout?</p>
+
+            <div className="modal-actions">
+              <button
+                onClick={handleLogout}
+                disabled={loading}
+                className="btn-delete"
+              >
+                Yes, Logout
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="btn-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button onClick={() => setShowAddForm(true)} className="btn-add-item">
         + Add Item

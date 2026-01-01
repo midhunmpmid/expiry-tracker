@@ -13,6 +13,7 @@ function ProductsManager() {
     image: null,
   });
   const [loading, setLoading] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(null);
 
   useEffect(() => {
     fetchCategories();
@@ -143,16 +144,17 @@ function ProductsManager() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
-
+  const handleDelete = async () => {
     setLoading(true);
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", deletingProduct.id);
 
     if (!error) {
       fetchProducts();
     }
+    setDeletingProduct(null);
     setLoading(false);
   };
 
@@ -249,6 +251,34 @@ function ProductsManager() {
         </div>
       )}
 
+      {deletingProduct && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to remove:</p>
+            <p className="delete-product-name">
+              <strong>{deletingProduct.name}</strong>
+            </p>
+
+            <div className="modal-actions">
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="btn-delete"
+              >
+                {loading ? "Deleting..." : "Yes, Delete"}
+              </button>
+              <button
+                onClick={() => setDeletingProduct(null)}
+                className="btn-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="category-groups">
         {sortedCategories.map((category) => {
           const categoryProducts = getProductsByCategory(category.id);
@@ -297,7 +327,7 @@ function ProductsManager() {
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDelete(product.id)}
+                                onClick={() => setDeletingProduct(product)}
                                 className="delete-option"
                               >
                                 Delete
