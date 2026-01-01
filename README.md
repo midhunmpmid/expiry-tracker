@@ -50,7 +50,3 @@ Pushes to `main` branch auto-deploy to Netlify.
 ## Database Setup
 
 See Supabase SQL files in project documentation.
-
-## Support
-
-Contact: your-email@example.com
