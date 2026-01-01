@@ -433,7 +433,7 @@ function UserDashboard() {
                               )}
                             </div>
                             <div className="modal-product-name">
-                              {product.name}
+                              {highlightText(product.name, searchQuery)}
                             </div>
                             {selectedProduct === product.id && (
                               <div className="checkmark">✓</div>

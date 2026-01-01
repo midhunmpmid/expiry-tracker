@@ -6,7 +6,10 @@ function CategoriesManager() {
   const [newCategory, setNewCategory] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
+  const [deletingCategory, setDeletingCategory] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchCategories();
@@ -56,16 +59,28 @@ function CategoriesManager() {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this category?"))
+  const handleDelete = async () => {
+    if (deleteConfirmText !== "remove") {
+      setError('Please type "remove" to confirm deletion');
       return;
+    }
 
     setLoading(true);
-    const { error } = await supabase.from("categories").delete().eq("id", id);
+    setError("");
+
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", deletingCategory.id);
 
     if (!error) {
+      setDeletingCategory(null);
+      setDeleteConfirmText("");
       fetchCategories();
+    } else {
+      setError(error.message);
     }
+
     setLoading(false);
   };
 
@@ -85,6 +100,51 @@ function CategoriesManager() {
           Add Category
         </button>
       </form>
+
+      {deletingCategory && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirm Category Deletion</h3>
+            <p>
+              Type <strong>remove</strong> to confirm deletion of:
+            </p>
+            <p className="delete-product-name">
+              <strong>{deletingCategory.name}</strong>
+            </p>
+            <div className="warning-box">
+              ⚠️ Warning: Deleting this category will also remove all products
+              that belong to it!
+            </div>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type 'remove'"
+              className="confirm-input"
+            />
+            {error && <div className="error-message">{error}</div>}
+            <div className="modal-actions">
+              <button
+                onClick={handleDelete}
+                disabled={loading || deleteConfirmText !== "remove"}
+                className="btn-delete"
+              >
+                {loading ? "Deleting..." : "Delete Category"}
+              </button>
+              <button
+                onClick={() => {
+                  setDeletingCategory(null);
+                  setDeleteConfirmText("");
+                  setError("");
+                }}
+                className="btn-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="items-list">
         {categories.map((category) => (
@@ -124,7 +184,7 @@ function CategoriesManager() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(category.id)}
+                    onClick={() => setDeletingCategory(category)}
                     className="btn-delete"
                   >
                     Delete

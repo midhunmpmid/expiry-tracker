@@ -449,6 +449,33 @@
   font-weight: 600;
 }
 
+.warning-box {
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  color: #856404;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.confirm-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 16px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.confirm-input:focus {
+  outline: none;
+  border-color: #f44336;
+}
+
 @media (max-width: 1024px) {
   .admin-header {
     padding: 16px 20px;
