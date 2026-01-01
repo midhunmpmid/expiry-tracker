@@ -111,11 +111,10 @@ function UserDashboard() {
         (item) => item.products?.category_id === category.id
       );
 
+      // Only expand if has expired or expiring TODAY items
       const hasUrgent = categoryItems.some((item) => {
         const status = getExpiryStatus(item.expiry_date);
-        return (
-          status === "critical" || status === "expired" || status === "today"
-        );
+        return status === "expired" || status === "today";
       });
 
       expanded[category.id] = hasUrgent;
