@@ -324,6 +324,21 @@ function UserDashboard() {
     setSelectedProduct(productId);
   };
 
+  const highlightText = (text, query) => {
+    if (!query.trim()) return text;
+
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={index} className="highlight">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   if (!shop)
     return (
       <div className="loading">
