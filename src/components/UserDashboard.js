@@ -366,6 +366,14 @@ function UserDashboard() {
     );
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  };
+
   if (!shop)
     return (
       <div className="loading">
@@ -666,10 +674,7 @@ function UserDashboard() {
                               </p>
                             ) : (
                               <p className="expiry-text">
-                                Expires:{" "}
-                                {new Date(
-                                  item.expiry_date
-                                ).toLocaleDateString()}
+                                Expires: {formatDate(item.expiry_date)}
                               </p>
                             )}
                           </div>
