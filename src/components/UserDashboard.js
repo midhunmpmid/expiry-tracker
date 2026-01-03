@@ -389,13 +389,20 @@ function UserDashboard() {
   return (
     <div className="user-dashboard">
       <div className="user-header">
-        <h1>{shop.name}</h1>
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="btn-logout"
-        >
-          Logout
-        </button>
+        <div className="header-left">
+          <h2>Expiry Tracker</h2>
+        </div>
+        <div className="header-center">
+          <h1>{shop.name}</h1>
+        </div>
+        <div className="header-right">
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="btn-logout"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {showLogoutConfirm && (

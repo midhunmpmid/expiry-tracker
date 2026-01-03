@@ -14,6 +14,39 @@
   box-shadow: 0 2px 8px rgba(0, 31, 63, 0.3);
 }
 
+.header-left {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.header-left h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #999;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-center h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #999;
+  text-align: center;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .user-header h1 {
   font-size: 28px;
   margin: 0;
