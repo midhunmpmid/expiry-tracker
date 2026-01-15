@@ -22,7 +22,11 @@ function UsersManager() {
   }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase.from("shops").select("*").order("name");
+    const { data } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("is_active", true)
+      .order("name");
     if (data) setUsers(data);
   };
 
@@ -41,7 +45,15 @@ function UsersManager() {
 
         if (shopError) throw shopError;
       } else {
-        // Create new user
+        // Check if an inactive shop with the same name exists
+        const { data: existingShop } = await supabase
+          .from("shops")
+          .select("*")
+          .eq("name", formData.shopName)
+          .eq("is_active", false)
+          .single();
+
+        // Create new auth user
         const { data: authData, error: authError } = await supabase.auth.signUp(
           {
             email: formData.username,
@@ -54,16 +66,31 @@ function UsersManager() {
         // Wait a moment for user to be created
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Create shop entry
-        const { error: shopError } = await supabase.from("shops").insert([
-          {
-            name: formData.shopName,
-            user_id: authData.user.id,
-            username: formData.username,
-          },
-        ]);
+        if (existingShop) {
+          // Reactivate existing shop with new credentials
+          const { error: shopError } = await supabase
+            .from("shops")
+            .update({
+              user_id: authData.user.id,
+              username: formData.username,
+              is_active: true,
+            })
+            .eq("id", existingShop.id);
 
-        if (shopError) throw shopError;
+          if (shopError) throw shopError;
+        } else {
+          // Create new shop entry
+          const { error: shopError } = await supabase.from("shops").insert([
+            {
+              name: formData.shopName,
+              user_id: authData.user.id,
+              username: formData.username,
+              is_active: true,
+            },
+          ]);
+
+          if (shopError) throw shopError;
+        }
       }
 
       setShowForm(false);
@@ -103,10 +130,10 @@ function UsersManager() {
     setError("");
 
     try {
-      // Only delete the shop entry - user auth account remains
+      // Soft delete - set is_active to false
       const { error: shopError } = await supabase
         .from("shops")
-        .delete()
+        .update({ is_active: false })
         .eq("id", user.id);
 
       if (shopError) {
@@ -190,7 +217,13 @@ function UsersManager() {
               {!editingUser ? (
                 <div className="form-group">
                   <label>Password</label>
-                  <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <input
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
@@ -199,19 +232,18 @@ function UsersManager() {
                       }
                       required
                       minLength={6}
-                      style={{ paddingRight: "60px" }}
+                      style={{ width: "100%", paddingRight: "60px" }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       style={{
                         position: "absolute",
-                        right: "8px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        color: "#666",
+                        right: "10px",
+                        background: "#e0e0e0",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        color: "#333",
                         cursor: "pointer",
                         fontSize: "12px",
                         padding: "4px 8px",
@@ -233,8 +265,9 @@ function UsersManager() {
                       color: "#856404",
                     }}
                   >
-                    <strong>Note:</strong> To reset the password, please delete
-                    this user and recreate them with a new password.
+                    <strong>Note:</strong> To reset the password, delete this
+                    user and recreate them with the same shop name. All user
+                    data will be preserved.
                   </div>
                 </div>
               )}
@@ -273,8 +306,8 @@ function UsersManager() {
               {users.find((u) => u.id === deletingUserId)?.name}
             </p>
             <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
-              Note: This will remove the shop but the user account will remain
-              in the system.
+              Note: User data will be preserved. If you recreate a user with the
+              same shop name, their data will be restored.
             </p>
             <input
               type="text"
