@@ -15,6 +15,7 @@ function UsersManager() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -58,6 +59,7 @@ function UsersManager() {
           {
             name: formData.shopName,
             user_id: authData.user.id,
+            username: formData.username,
           },
         ]);
 
@@ -67,6 +69,7 @@ function UsersManager() {
       setShowForm(false);
       setEditingUser(null);
       setFormData({ shopName: "", username: "", password: "" });
+      setShowPassword(false);
       fetchUsers();
     } catch (err) {
       setError(err.message || "An error occurred");
@@ -128,6 +131,7 @@ function UsersManager() {
     setEditingUser(null);
     setFormData({ shopName: "", username: "", password: "" });
     setError("");
+    setShowPassword(false);
   };
 
   return (
@@ -156,35 +160,66 @@ function UsersManager() {
                 />
               </div>
 
-              {!editingUser && (
-                <div className="form-group">
-                  <label>Username (Email)</label>
-                  <input
-                    type="email"
-                    value={formData.username}
-                    onChange={(e) =>
-                      setFormData({ ...formData, username: e.target.value })
-                    }
-                    required
-                  />
+              <div className="form-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={
+                    editingUser
+                      ? editingUser.username || "N/A"
+                      : formData.username
+                  }
+                  onChange={(e) =>
+                    setFormData({ ...formData, username: e.target.value })
+                  }
+                  required={!editingUser}
+                  disabled={!!editingUser}
+                  style={
+                    editingUser
+                      ? { backgroundColor: "#f0f0f0", cursor: "not-allowed" }
+                      : {}
+                  }
+                />
+                {editingUser && (
                   <small style={{ color: "#666", fontSize: "12px" }}>
-                    User will need to confirm their email before logging in
+                    Username cannot be changed
                   </small>
-                </div>
-              )}
+                )}
+              </div>
 
               {!editingUser ? (
                 <div className="form-group">
                   <label>Password</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    required
-                    minLength={6}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      required
+                      minLength={6}
+                      style={{ paddingRight: "60px" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "8px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "#666",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        padding: "4px 8px",
+                      }}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="form-group">
