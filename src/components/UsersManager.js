@@ -32,21 +32,13 @@ function UsersManager() {
 
     try {
       if (editingUser) {
-        // Update shop name
+        // Update shop name only
         const { error: shopError } = await supabase
           .from("shops")
           .update({ name: formData.shopName })
           .eq("id", editingUser.id);
 
         if (shopError) throw shopError;
-
-        // Note: Password update requires admin privileges
-        // For now, users need to reset password via email
-        if (formData.password) {
-          setError(
-            "Password update requires the user to reset via email. User has been notified."
-          );
-        }
       } else {
         // Create new user
         const { data: authData, error: authError } = await supabase.auth.signUp(
@@ -181,24 +173,36 @@ function UsersManager() {
                 </div>
               )}
 
-              <div className="form-group">
-                <label>{editingUser ? "New Password" : "Password"}</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  required={!editingUser}
-                  minLength={6}
-                />
-                {editingUser && (
-                  <small style={{ color: "#666", fontSize: "12px" }}>
-                    Note: Password changes are currently disabled. Ask user to
-                    reset via email.
-                  </small>
-                )}
-              </div>
+              {!editingUser ? (
+                <div className="form-group">
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    required
+                    minLength={6}
+                  />
+                </div>
+              ) : (
+                <div className="form-group">
+                  <div
+                    style={{
+                      backgroundColor: "#fff3cd",
+                      border: "1px solid #ffc107",
+                      borderRadius: "4px",
+                      padding: "12px",
+                      fontSize: "14px",
+                      color: "#856404",
+                    }}
+                  >
+                    <strong>Note:</strong> To reset the password, please delete
+                    this user and recreate them with a new password.
+                  </div>
+                </div>
+              )}
 
               {error && <div className="error-message">{error}</div>}
 
