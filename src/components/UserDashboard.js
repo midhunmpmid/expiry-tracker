@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import DatePicker from "./DatePicker";
 import "./UserDashboard.css";
 
 function UserDashboard() {
@@ -19,6 +20,11 @@ function UserDashboard() {
   const [deletingItem, setDeletingItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [highlightedItemId, setHighlightedItemId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [successCategoryId, setSuccessCategoryId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [skipAutoExpand, setSkipAutoExpand] = useState(false);
 
   useEffect(() => {
     fetchShop();
@@ -34,9 +40,12 @@ function UserDashboard() {
   }, [shop]);
 
   useEffect(() => {
-    if (shop && inventory.length > 0) {
+    if (shop && inventory.length > 0 && !skipAutoExpand) {
       // Auto-expand only red categories when inventory is loaded
       autoExpandCategories(inventory);
+    }
+    if (skipAutoExpand) {
+      setSkipAutoExpand(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop, inventory.length]);
@@ -112,10 +121,11 @@ function UserDashboard() {
         (item) => item.products?.category_id === category.id
       );
 
-      // Only expand if has expired or expiring TODAY items
+      // Only expand if has expired, expiring today, or expiring this weekend items
       const hasUrgent = categoryItems.some((item) => {
         const status = getExpiryStatus(item.expiry_date);
-        return status === "expired" || status === "today";
+        const expiringWeekend = isExpiringThisWeekend(item.expiry_date);
+        return status === "expired" || status === "today" || expiringWeekend;
       });
 
       expanded[category.id] = hasUrgent;
@@ -142,6 +152,23 @@ function UserDashboard() {
     if (days <= 10) return "warning";
     return "ok";
   }, []);
+
+  const isExpiringThisWeekend = (expiryDate) => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+
+    if (dayOfWeek !== 5) return false; // Only show on Friday
+
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Check if expires Saturday (1 day) or Sunday (2 days)
+    return diffDays === 1 || diffDays === 2;
+  };
 
   const getEarliestExpiryDate = (categoryId) => {
     const categoryItems = inventory.filter(
@@ -276,15 +303,83 @@ function UserDashboard() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.from("inventory_items").insert([
-      {
-        shop_id: shop.id,
-        product_id: selectedProduct,
-        expiry_date: expiryDate,
-      },
-    ]);
+    // Check for duplicate - same product with same expiry date
+    const existingItem = inventory.find(
+      (item) =>
+        item.product_id === selectedProduct && item.expiry_date === expiryDate
+    );
 
-    if (!error) {
+    if (existingItem) {
+      setErrorMessage("This item with the same expiry date already exists!");
+      setTimeout(() => setErrorMessage(""), 3000);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("inventory_items")
+      .insert([
+        {
+          shop_id: shop.id,
+          product_id: selectedProduct,
+          expiry_date: expiryDate,
+        },
+      ])
+      .select(
+        `
+      *,
+      products (
+        id,
+        name,
+        image_url,
+        category_id
+      )
+    `
+      )
+      .single();
+
+    if (!error && data) {
+      const addedProduct = products.find((p) => p.id === selectedProduct);
+      const categoryId = addedProduct?.category_id;
+
+      // Skip auto-expand on next inventory fetch
+      setSkipAutoExpand(true);
+
+      // Expand the category
+      if (categoryId) {
+        setExpandedCategories((prev) => ({
+          ...prev,
+          [categoryId]: true,
+        }));
+
+        // Set success message in category header
+        setSuccessCategoryId(categoryId);
+        setSuccessMessage(`${addedProduct?.name || "Item"} has been added!`);
+
+        // Scroll to category after DOM update
+        setTimeout(() => {
+          const categoryElement = document.getElementById(
+            `category-${categoryId}`
+          );
+          if (categoryElement) {
+            categoryElement.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 100);
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage("");
+          setSuccessCategoryId(null);
+        }, 3000);
+      }
+
+      // Highlight the added item
+      setHighlightedItemId(data.id);
+      setTimeout(() => setHighlightedItemId(null), 3000);
+
       setShowAddForm(false);
       setSelectedProduct("");
       setExpiryDate("");
@@ -493,7 +588,7 @@ function UserDashboard() {
                               {highlightText(product.name, searchQuery)}
                             </div>
                             {selectedProduct === product.id && (
-                              <div className="checkmark">✓</div>
+                              <div className="checkmark">✔</div>
                             )}
                           </div>
                         ))}
@@ -507,13 +602,16 @@ function UserDashboard() {
             <form onSubmit={handleAddItem} className="modal-form">
               <div className="form-group">
                 <label>Expiry Date</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
                   required
                 />
               </div>
+
+              {errorMessage && (
+                <div className="error-message">{errorMessage}</div>
+              )}
 
               <div className="modal-actions">
                 <button
@@ -531,6 +629,7 @@ function UserDashboard() {
                     setExpiryDate("");
                     setSearchQuery("");
                     setExpandedModalCategories({});
+                    setErrorMessage("");
                   }}
                   className="btn-cancel"
                 >
@@ -552,8 +651,7 @@ function UserDashboard() {
             <form onSubmit={handleEditItem}>
               <div className="form-group">
                 <label>New Expiry Date</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
                   required
@@ -620,9 +718,15 @@ function UserDashboard() {
         {sortedCategories.map((category) => {
           const categoryItems = getInventoryByCategory(category.id);
           const categoryStatus = getCategoryStatus(category.id);
+          const showCategorySuccess =
+            successCategoryId === category.id && successMessage;
 
           return (
-            <div key={category.id} className="category-group">
+            <div
+              key={category.id}
+              id={`category-${category.id}`}
+              className="category-group"
+            >
               <div
                 className={`category-header ${categoryStatus}`}
                 onClick={() => toggleCategory(category.id)}
@@ -640,14 +744,25 @@ function UserDashboard() {
 
               {expandedCategories[category.id] && (
                 <div className="category-content">
+                  {showCategorySuccess && (
+                    <div className="category-success-message">
+                      {successMessage}
+                    </div>
+                  )}
                   <div className="inventory-list">
                     {categoryItems.map((item) => {
                       const status = getExpiryStatus(item.expiry_date);
+                      const isHighlighted = highlightedItemId === item.id;
+                      const expiringWeekend = isExpiringThisWeekend(
+                        item.expiry_date
+                      );
 
                       return (
                         <div
                           key={item.id}
-                          className={`inventory-item ${status}`}
+                          className={`inventory-item ${status}${
+                            isHighlighted ? " highlighted" : ""
+                          }`}
                         >
                           <div className="item-image">
                             {item.products.image_url ? (
@@ -678,6 +793,10 @@ function UserDashboard() {
                             ) : status === "today" ? (
                               <p className="expiry-text today-text">
                                 <strong>EXPIRING TODAY</strong>
+                              </p>
+                            ) : expiringWeekend ? (
+                              <p className="expiry-text today-text">
+                                <strong>EXPIRING THIS WEEKEND</strong>
                               </p>
                             ) : (
                               <p className="expiry-text">
