@@ -1,0 +1,497 @@
+/* ── Page shell ── */
+.help-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 60px;
+}
+
+/* ── Header ── */
+.help-header {
+  background: #001f3f;
+  color: #ccc;
+  padding: 32px 20px;
+  box-shadow: 0 2px 8px rgba(0, 31, 63, 0.3);
+}
+
+.help-header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.help-guide-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.help-header-text h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ccc;
+  margin: 0 0 10px;
+}
+
+.help-header-text p {
+  font-size: 14px;
+  color: #888;
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0;
+}
+
+/* ── Nav pills ── */
+.help-nav {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.help-nav a {
+  font-size: 12px;
+  font-weight: 600;
+  color: #001f3f;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 100px;
+  padding: 5px 14px;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.help-nav a:hover {
+  background: #4caf50;
+  color: #fff;
+  border-color: #4caf50;
+}
+
+/* ── Main container ── */
+.help-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Sections ── */
+.help-section {
+  margin-top: 36px;
+}
+
+.help-section-number {
+  display: inline-block;
+  background: #4caf50;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-bottom: 10px;
+}
+
+.help-section h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #001f3f;
+  margin: 0 0 12px;
+}
+
+.help-section p {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #333;
+}
+
+/* ── Purpose box ── */
+.help-purpose-box {
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  border-radius: 0 10px 10px 0;
+  padding: 18px 20px;
+  margin-top: 16px;
+}
+
+.help-purpose-box p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #2e7d32;
+  margin: 0;
+}
+
+/* ── Generic card ── */
+.help-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-top: 16px;
+}
+
+.help-card p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #333;
+  margin: 0;
+}
+
+/* ── Examples grid ── */
+.help-examples-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+@media (max-width: 520px) {
+  .help-examples-grid {
+    grid-template-columns: 1fr;
+  }
+  .help-login-steps {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.help-example-card {
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.help-example-card.good {
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+}
+
+.help-example-card.skip {
+  background: #fff8e1;
+  border: 1px solid #ffe0b2;
+}
+
+.help-example-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.good-tag {
+  color: #2e7d32;
+}
+.skip-tag {
+  color: #e65100;
+}
+
+.help-example-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.help-example-card ul li {
+  font-size: 13.5px;
+  line-height: 1.6;
+  padding: 3px 0;
+  color: #1a2e1a;
+}
+
+.help-example-card ul li::before {
+  content: "·  ";
+  font-weight: 700;
+}
+
+.help-example-card.good ul li::before {
+  color: #4caf50;
+}
+.help-example-card.skip ul li::before {
+  color: #ff8f00;
+}
+
+/* ── Tip banners ── */
+.help-tip {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 14px;
+}
+
+.help-tip.tip-green {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.help-tip.tip-amber {
+  background: #fff8e1;
+  border-color: #ffe0b2;
+}
+
+.help-tip-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.help-tip p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #333;
+  margin: 0;
+}
+
+/* ── Login steps ── */
+.help-login-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.help-login-step {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 18px 14px;
+  text-align: center;
+}
+
+.help-step-circle {
+  width: 34px;
+  height: 34px;
+  background: #4caf50;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+.help-login-step p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #444;
+  margin: 0;
+}
+
+/* ── Colour guide ── */
+.help-colour-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.help-colour-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.help-colour-swatch {
+  width: 50px;
+  height: 30px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.swatch-red {
+  background: #ffcdd2;
+}
+.swatch-yellow {
+  background: #fff9c4;
+}
+.swatch-white {
+  background: #f5f5f5;
+}
+
+.help-colour-info strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #001f3f;
+  margin-bottom: 2px;
+}
+
+.help-colour-info span {
+  font-size: 13px;
+  color: #666;
+}
+
+/* ── Subheading ── */
+.help-subheading {
+  font-size: 14px;
+  font-weight: 600;
+  color: #001f3f;
+  margin-top: 24px;
+  margin-bottom: 0;
+}
+
+/* ── Status table ── */
+.help-status-table {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.help-status-header {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  background: #e8f5e9;
+  padding: 8px 16px;
+  gap: 16px;
+}
+
+.help-status-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2e7d32;
+}
+
+.help-status-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+}
+
+.help-status-row p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #333;
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .help-status-header,
+  .help-status-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* ── Status badges ── */
+.help-status-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.badge-red {
+  background: #ffebee;
+  color: #f44336;
+  border: 1px solid #ffcdd2;
+}
+
+.badge-amber {
+  background: #fff8e1;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+/* ── Steps list ── */
+.help-steps {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-steps li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.help-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  background: #4caf50;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Contact callout ── */
+.help-contact-callout {
+  background: #001f3f;
+  color: #ccc;
+  border-radius: 12px;
+  padding: 24px 26px;
+  margin-top: 36px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.help-contact-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.help-contact-callout h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ddd;
+  margin: 0 0 6px;
+}
+
+.help-contact-callout p {
+  font-size: 13.5px;
+  color: #999;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Footer ── */
+.help-footer {
+  margin-top: 28px;
+  font-size: 13px;
+  color: #aaa;
+  text-align: center;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}

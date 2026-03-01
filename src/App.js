@@ -10,6 +10,7 @@ import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import UserLogin from "./components/UserLogin";
 import UserDashboard from "./components/UserDashboard";
+import Help from "./components/Help";
 import "./App.css";
 
 function AppRoutes() {
@@ -146,6 +147,9 @@ function AppRoutes() {
           )
         }
       />
+
+      {/* Help Route - publicly accessible */}
+      <Route path="/help" element={<Help />} />
 
       {/* Catch all - redirect to appropriate login */}
       <Route

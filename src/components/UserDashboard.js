@@ -103,7 +103,7 @@ function UserDashboard() {
           image_url,
           category_id
         )
-      `
+      `,
       )
       .eq("shop_id", shop.id)
       .order("expiry_date");
@@ -118,7 +118,7 @@ function UserDashboard() {
 
     categories.forEach((category) => {
       const categoryItems = inventoryData.filter(
-        (item) => item.products?.category_id === category.id
+        (item) => item.products?.category_id === category.id,
       );
 
       // Only expand if has expired, expiring today, or expiring this weekend items
@@ -172,7 +172,7 @@ function UserDashboard() {
 
   const getEarliestExpiryDate = (categoryId) => {
     const categoryItems = inventory.filter(
-      (item) => item.products?.category_id === categoryId
+      (item) => item.products?.category_id === categoryId,
     );
 
     if (categoryItems.length === 0) return null;
@@ -184,7 +184,7 @@ function UserDashboard() {
   const getCategoryStatus = useCallback(
     (categoryId) => {
       const categoryItems = inventory.filter(
-        (item) => item.products?.category_id === categoryId
+        (item) => item.products?.category_id === categoryId,
       );
 
       let hasExpired = false;
@@ -204,13 +204,13 @@ function UserDashboard() {
       if (hasWarning) return "warning";
       return "ok";
     },
-    [inventory, getExpiryStatus]
+    [inventory, getExpiryStatus],
   );
 
   const getSortedCategories = () => {
     // Filter categories that have inventory items
     const categoriesWithItems = categories.filter((category) =>
-      inventory.some((item) => item.products?.category_id === category.id)
+      inventory.some((item) => item.products?.category_id === category.id),
     );
 
     return categoriesWithItems.sort((a, b) => {
@@ -264,7 +264,7 @@ function UserDashboard() {
     return products.filter(
       (product) =>
         product.name.toLowerCase().includes(query) ||
-        product.categories?.name.toLowerCase().includes(query)
+        product.categories?.name.toLowerCase().includes(query),
     );
   };
 
@@ -306,7 +306,7 @@ function UserDashboard() {
     // Check for duplicate - same product with same expiry date
     const existingItem = inventory.find(
       (item) =>
-        item.product_id === selectedProduct && item.expiry_date === expiryDate
+        item.product_id === selectedProduct && item.expiry_date === expiryDate,
     );
 
     if (existingItem) {
@@ -334,7 +334,7 @@ function UserDashboard() {
         image_url,
         category_id
       )
-    `
+    `,
       )
       .single();
 
@@ -359,7 +359,7 @@ function UserDashboard() {
         // Scroll to category after DOM update
         setTimeout(() => {
           const categoryElement = document.getElementById(
-            `category-${categoryId}`
+            `category-${categoryId}`,
           );
           if (categoryElement) {
             categoryElement.scrollIntoView({
@@ -457,7 +457,7 @@ function UserDashboard() {
         </mark>
       ) : (
         part
-      )
+      ),
     );
   };
 
@@ -525,9 +525,20 @@ function UserDashboard() {
         </div>
       )}
 
-      <button onClick={() => setShowAddForm(true)} className="btn-add-item">
-        + Add Item
-      </button>
+      <div className="action-bar">
+        <button onClick={() => setShowAddForm(true)} className="btn-add-item">
+          + Add Item
+        </button>
+
+        <a
+          href="/help"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="help-link"
+        >
+          💡 How to get the most out of this piece of software?
+        </a>
+      </div>
 
       {showAddForm && (
         <div className="modal-overlay">
@@ -754,7 +765,7 @@ function UserDashboard() {
                       const status = getExpiryStatus(item.expiry_date);
                       const isHighlighted = highlightedItemId === item.id;
                       const expiringWeekend = isExpiringThisWeekend(
-                        item.expiry_date
+                        item.expiry_date,
                       );
 
                       return (
@@ -772,7 +783,7 @@ function UserDashboard() {
                                 onError={(e) => {
                                   console.error(
                                     "Failed to load image:",
-                                    item.products.image_url
+                                    item.products.image_url,
                                   );
                                   e.target.style.display = "none";
                                   e.target.parentElement.innerHTML =
